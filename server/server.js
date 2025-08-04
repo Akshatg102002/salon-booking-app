@@ -7,20 +7,26 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration
+// ✅ FIXED CORS CONFIGURATION
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://salon-booking-frontend.onrender.com'] // Update with your frontend URL
-    : ['http://localhost:3000'],
+  origin: [
+    'https://salon-booking-app-1.onrender.com', // Your actual frontend URL
+    'http://localhost:3000' // For local development
+  ],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200
 };
 
-// Middleware
+// Apply CORS middleware
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// ✅ ADD THIS HEALTH CHECK ROUTE
+// Add preflight handling for all routes
+app.options('*', cors(corsOptions));
+
+// Health check routes
 app.get('/', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
