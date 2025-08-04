@@ -112,7 +112,7 @@ export const Home = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-6 our-premium">
             {services.map((service, index) => (
               <Card key={index} className="service-card">
                 <div className="service-icon">
@@ -1257,49 +1257,56 @@ const StaffModal = ({ isOpen, onClose, onSave, services }) => {
               required
             />
           </div>
+        {/* Working Days */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Working Days
+  </label>
+
+  <div className="grid grid-cols-2 gap-2">
+    {daysOfWeek.map(day => (
+      <label key={day.key} className="flex justify-between">
+  <span>{day.label}</span>
+  <input
+    type="checkbox"
+   style={{ width: '5%' }}
+    checked={formData.workingHours.workingDays.includes(day.key)}
+    onChange={(e) => handleWorkingDayChange(day.key, e.target.checked)}
+  />
+</label>
+
+    ))}
+  </div>
+</div>
+<br></br>
+{/* Assign Services */}
+<div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Assign Services *
+  </label>
+
+  <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded p-3">
+    {services.map(service => (
+     <label key={service._id} className="flex justify-between">
+  <span>{service.name}</span>
+  <input
+    type="checkbox"
+     style={{ width: '5%' }}
+    checked={formData.services.includes(service._id)}
+    onChange={(e) => {
+      const selectedServices = e.target.checked
+        ? [...formData.services, service._id]
+        : formData.services.filter(id => id !== service._id);
+      setFormData({ ...formData, services: selectedServices });
+    }}
+  />
+</label>
+
+    ))}
+  </div>
+</div>
+
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Working Days
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {daysOfWeek.map(day => (
-                <label key={day.key} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.workingHours.workingDays.includes(day.key)}
-                    onChange={(e) => handleWorkingDayChange(day.key, e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">{day.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Assign Services *
-          </label>
-          <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded p-3">
-            {services.map(service => (
-              <label key={service._id} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.services.includes(service._id)}
-                  onChange={(e) => {
-                    const selectedServices = e.target.checked
-                      ? [...formData.services, service._id]
-                      : formData.services.filter(id => id !== service._id);
-                    setFormData({ ...formData, services: selectedServices });
-                  }}
-                  className="mr-2"
-                />
-                <span className="text-sm">{service.name}</span>
-              </label>
-            ))}
-          </div>
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">

@@ -1110,3 +1110,14 @@ body {
   width: 32px;
   height: 32px;
 }
+
+@media (max-width: 768px) {
+  .our-premium {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .service-card {
+    padding: 0 !important; /* already present, but you can redefine or adjust here */
+  }
+}
+

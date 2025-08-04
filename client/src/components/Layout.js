@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AppContext';
-import { Toast, Modal,Button } from './UI';
+import { Toast, Modal, Button } from './UI';
 
 const Layout = ({ children }) => {
   const { user, logout, toast } = useAuth();
   const navigate = useNavigate();
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+    setIsMobileMenuOpen(false); // Close mobile menu after logout
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -36,17 +42,17 @@ const Layout = ({ children }) => {
             transition: color 150ms ease-in-out;
             text-decoration: none;
             font-weight: 500;
+            display: block;
+            padding: 0.5rem 0;
           }
           .nav-link:hover {
             color: #d12c6a;
           }
-          .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: background-color 150ms ease-in-out, color 150ms ease-in-out, border-color 150ms ease-in-out;
-            text-decoration: none;
-            cursor: pointer;
+          .desktop-nav-link {
+            padding: 0;
+            display: inline-block;
+            margin-left:10px;
+            margin-right:10px;
           }
           .btn-primary {
             background-color: #d12c6a;
@@ -57,6 +63,7 @@ const Layout = ({ children }) => {
             background-color: #b8255b;
             border-color: #b8255b;
           }
+          
           .btn-outline {
             border: 1px solid #d12c6a;
             color: #d12c6a;
@@ -71,13 +78,95 @@ const Layout = ({ children }) => {
             width: auto;
             border-radius: 0.75rem;
           }
+          .mobile-menu {
+            position: fixed;
+            top: 5rem; /* Height of navbar */
+            right: 0;
+            width: 280px;
+            height: calc(100vh - 5rem);
+            background-color: #fff;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 40;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
+          }
+          .mobile-menu.open {
+            transform: translateX(0);
+          }
+          .mobile-overlay {
+            position: fixed;
+            top: 5rem;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+          }
+          .mobile-overlay.open {
+            opacity: 1;
+            visibility: visible;
+          }
+          .hamburger {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 0.5rem;
+            border: none;
+            background: none;
+            z-index: 51;
+            position: relative;
+          }
+          .hamburger span {
+            width: 25px;
+            height: 3px;
+            background-color: #4a5568;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+          }
+          .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+          }
+          .hamburger.active span:nth-child(2) {
+            opacity: 0;
+          }
+          .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+          }
+          
+          /* Hide mobile menu on desktop */
+          @media (min-width: 769px) {
+            .mobile-menu,
+            .mobile-overlay,
+            .hamburger {
+              display: none !important;
+            }
+          }
+          
+          /* Mobile styles */
+          @media (max-width: 768px) {
+            .mobile-menu-btn {
+              width: 100%;
+              margin: 0.5rem 0;
+              justify-content: center;
+            }
+            .desktop-nav {
+              display: none !important;
+            }
+          }
         `}
       </style>
+      
       <nav className="navbar">
         <div className="nav-container">
           <div className="flex justify-between items-center h-20">
+            {/* Logo */}
             <div className="flex items-center">
-              <Link to="/" className="flex-shrink-0">
+              <Link to="/" className="flex-shrink-0" onClick={closeMobileMenu}>
                 <img
                   src="https://tan-tarsier-675415.hostingersite.com/wp-content/uploads/2025/05/cropped-logo-1.png"
                   alt="Karmi Beauty Logo"
@@ -86,35 +175,137 @@ const Layout = ({ children }) => {
               </Link>
             </div>
             
-            <div className="flex items-center space-x-6">
+            {/* Desktop Navigation */}
+            <div className="desktop-nav hidden md:flex items-center space-x-6">
               {user ? (
                 <>
                   <span className="text-gray-600 font-medium">Hello, {user.name}</span>
                   {user.role === 'customer' && (
                     <>
-                      <Link to="/booking" className="nav-link">Book Now</Link>
-                      <Link to="/my-bookings" className="nav-link">My Bookings</Link>
+                      <Link to="/booking" className="nav-link desktop-nav-link">Book Now</Link>
+                      <Link to="/my-bookings" className="nav-link desktop-nav-link">My Bookings</Link>
                     </>
                   )}
                   {user.role === 'staff' && (
-                    <Link to="/staff-dashboard" className="nav-link">My Appointments</Link>
+                    <Link to="/staff-dashboard" className="nav-link desktop-nav-link">My Appointments</Link>
                   )}
                   {user.role === 'admin' && (
-                    <Link to="/admin-dashboard" className="nav-link">Admin Dashboard</Link>
+                    <Link to="/admin-dashboard" className="nav-link desktop-nav-link">Admin Dashboard</Link>
                   )}
-                  <button onClick={handleLogout} className="btn btn-secondary">
+                  <button onClick={handleLogout} className="btn btn-secondary" style={{padding: '0.5rem',
+  borderRadius: '0.5rem',
+  fontWeight: 600,
+  transition: 'background-color 150ms ease-in-out, color 150ms ease-in-out, border-color 150ms ease-in-out',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  border: 'none',
+  display: 'inline-block',
+  textAlign: 'center'}}>
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="nav-link">Login</Link>
+                  <Link to="/login" className="nav-link desktop-nav-link">Login</Link>
                   <Link to="/register" className="btn btn-primary">Sign Up</Link>
                 </>
               )}
             </div>
+
+            {/* Mobile menu button */}
+            <button 
+              className={`hamburger md:hidden ${isMobileMenuOpen ? 'active' : ''}`}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle mobile menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        <div className={`mobile-menu md:hidden ${isMobileMenuOpen ? 'open' : ''}`}>
+          <div className="flex flex-col p-6 space-y-4">
+            {user ? (
+              <>
+                <div className="border-b border-gray-200 pb-4 mb-4">
+                  <span className="text-gray-600 font-medium text-lg">Hello, {user.name}</span>
+                </div>
+                
+                {user.role === 'customer' && (
+                  <>
+                    <Link 
+                      to="/booking" 
+                      className="nav-link text-lg border-b border-gray-100 pb-3" 
+                      onClick={closeMobileMenu}
+                    >
+                      Book Now
+                    </Link>
+                    <Link 
+                      to="/my-bookings" 
+                      className="nav-link text-lg border-b border-gray-100 pb-3" 
+                      onClick={closeMobileMenu}
+                    >
+                      My Bookings
+                    </Link>
+                  </>
+                )}
+                
+                {user.role === 'staff' && (
+                  <Link 
+                    to="/staff-dashboard" 
+                    className="nav-link text-lg border-b border-gray-100 pb-3" 
+                    onClick={closeMobileMenu}
+                  >
+                    My Appointments
+                  </Link>
+                )}
+                
+                {user.role === 'admin' && (
+                  <Link 
+                    to="/admin-dashboard" 
+                    className="nav-link text-lg border-b border-gray-100 pb-3" 
+                    onClick={closeMobileMenu}
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+                
+                <button 
+                  onClick={handleLogout} 
+                  className="btn btn-secondary mobile-menu-btn mt-6"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  to="/login" 
+                  className="nav-link text-lg border-b border-gray-100 pb-3" 
+                  onClick={closeMobileMenu}
+                >
+                  Login
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="btn btn-primary mobile-menu-btn mt-4" 
+                  onClick={closeMobileMenu}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile menu overlay */}
+        <div 
+          className={`mobile-overlay md:hidden ${isMobileMenuOpen ? 'open' : ''}`}
+          onClick={closeMobileMenu}
+        />
       </nav>
       
       <main className="pb-16">{children}</main>
