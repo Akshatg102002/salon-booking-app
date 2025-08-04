@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const baseURL = 'https://salon-booking-app-yv82.onrender.com/api';
+
 export const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -26,12 +28,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token is invalid or expired
-      console.log('Token expired or invalid, logging out...');
       localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
       
-      // Only redirect to login if not already on login/register pages
       const currentPath = window.location.pathname;
       if (!['/login', '/register', '/'].includes(currentPath)) {
         window.location.href = '/login';
