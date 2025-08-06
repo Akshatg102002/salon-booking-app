@@ -66,6 +66,8 @@ app.use('*', (req, res) => {
   });
 });
 
+app.use('/uploads', express.static('uploads'));
+
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, '0.0.0.0', () => {
