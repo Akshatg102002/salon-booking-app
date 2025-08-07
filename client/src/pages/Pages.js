@@ -1171,120 +1171,276 @@ const AdminStats = ({ bookings }) => {
   );
 };
 
-// Calendar Component
-const AdminCalendar = ({ bookings, onDateSelect, selectedDate }) => {
+// Enhanced AdminCalendar with multiple view modes
+const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState('month'); // month, week, day
+  const [selectedStaff, setSelectedStaff] = useState('all');
+  const [staff, setStaff] = useState([]);
 
-  const getDaysInMonth = (date) => {
+  // Fetch staff members
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const response = await api.get('/staff');
+      setStaff(response.data);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+    }
+  };
+
+  // Filter bookings by selected staff
+  const getFilteredBookings = () => {
+    if (selectedStaff === 'all') return bookings;
+    return bookings.filter(booking => booking.staff?._id === selectedStaff);
+  };
+
+  const filteredBookings = getFilteredBookings();
+
+  // Navigation functions
+  const navigateDate = (direction) => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      switch (view) {
+        case 'day':
+          newDate.setDate(prevDate.getDate() + direction);
+          break;
+        case 'week':
+          newDate.setDate(prevDate.getDate() + (direction * 7));
+          break;
+        case 'month':
+          newDate.setMonth(prevDate.getMonth() + direction);
+          break;
+      }
+      return newDate;
+    });
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  // Generate calendar data based on view
+  const getCalendarData = () => {
+    switch (view) {
+      case 'day':
+        return getDayData(currentDate);
+      case 'week':
+        return getWeekData(currentDate);
+      case 'month':
+        return getMonthData(currentDate);
+      default:
+        return getMonthData(currentDate);
+    }
+  };
+
+  const getDayData = (date) => {
+    const dayBookings = filteredBookings.filter(booking => {
+      const bookingDate = new Date(booking.date);
+      return bookingDate.toDateString() === date.toDateString();
+    });
+
+    return {
+      type: 'day',
+      date,
+      bookings: dayBookings.sort((a, b) => a.startTime.localeCompare(b.startTime))
+    };
+  };
+
+  const getWeekData = (date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - date.getDay());
+    
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      
+      const dayBookings = filteredBookings.filter(booking => {
+        const bookingDate = new Date(booking.date);
+        return bookingDate.toDateString() === day.toDateString();
+      });
+
+      week.push({
+        date: day,
+        bookings: dayBookings.sort((a, b) => a.startTime.localeCompare(b.startTime))
+      });
+    }
+
+    return {
+      type: 'week',
+      startDate: startOfWeek,
+      days: week
+    };
+  };
+
+  const getMonthData = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-
+    
     const days = [];
-
+    
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
-
+    
     // Add all days of the month
     for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
+      const day = new Date(year, month, i);
+      const dayBookings = filteredBookings.filter(booking => {
+        const bookingDate = new Date(booking.date);
+        return bookingDate.toDateString() === day.toDateString();
+      });
+      
+      days.push({
+        date: day,
+        bookings: dayBookings
+      });
     }
 
-    return days;
+    return {
+      type: 'month',
+      days,
+      currentMonth: month,
+      currentYear: year
+    };
   };
 
-  const getBookingsForDate = (date) => {
-    if (!date) return [];
-    const dateString = date.toDateString();
-    return bookings.filter(booking => {
-      const bookingDate = new Date(booking.date);
-      return bookingDate.toDateString() === dateString;
-    });
+  const calendarData = getCalendarData();
+
+  const getViewTitle = () => {
+    const options = { 
+      year: 'numeric', 
+      month: 'long',
+      ...(view === 'day' && { day: 'numeric' })
+    };
+    
+    if (view === 'week') {
+      const weekData = calendarData;
+      const start = weekData.days[0].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const end = weekData.days[6].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `${start} - ${end}, ${weekData.days[0].date.getFullYear()}`;
+    }
+    
+    return currentDate.toLocaleDateString('en-US', options);
   };
-
-  const navigateMonth = (direction) => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setMonth(prevDate.getMonth() + direction);
-      return newDate;
-    });
-  };
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  const days = getDaysInMonth(currentDate);
 
   return (
     <div className="admin-calendar-container">
       {/* Calendar Header */}
       <div className="calendar-header">
         <div className="calendar-navigation">
-          <button
-            onClick={() => navigateMonth(-1)}
-            className="nav-btn"
-          >
+          <button onClick={() => navigateDate(-1)} className="nav-btn">
             &#8249;
           </button>
-          <h2 className="calendar-title">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h2>
-          <button
-            onClick={() => navigateMonth(1)}
-            className="nav-btn"
-          >
+          <div className="calendar-title-section">
+            <h2 className="calendar-title">{getViewTitle()}</h2>
+            <button onClick={goToToday} className="today-btn">Today</button>
+          </div>
+          <button onClick={() => navigateDate(1)} className="nav-btn">
             &#8250;
           </button>
         </div>
+        
+        <div className="calendar-controls">
+          {/* View Controls */}
+          <div className="view-controls">
+            <button 
+              onClick={() => setView('day')}
+              className={`view-btn ${view === 'day' ? 'active' : ''}`}
+            >
+              Day
+            </button>
+            <button 
+              onClick={() => setView('week')}
+              className={`view-btn ${view === 'week' ? 'active' : ''}`}
+            >
+              Week
+            </button>
+            <button 
+              onClick={() => setView('month')}
+              className={`view-btn ${view === 'month' ? 'active' : ''}`}
+            >
+              Month
+            </button>
+          </div>
+
+          {/* Staff Filter */}
+          <div className="staff-filter">
+            <select 
+              value={selectedStaff} 
+              onChange={(e) => setSelectedStaff(e.target.value)}
+              className="staff-select"
+            >
+              <option value="all">All Staff</option>
+              {staff.map(member => (
+                <option key={member._id} value={member._id}>
+                  {member.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Calendar Grid */}
+      {/* Calendar Content */}
+      <div className="calendar-content">
+        {view === 'month' && <MonthView data={calendarData} onDateSelect={onDateSelect} selectedDate={selectedDate} />}
+        {view === 'week' && <WeekView data={calendarData} onDateSelect={onDateSelect} selectedDate={selectedDate} />}
+        {view === 'day' && <DayView data={calendarData} onDateSelect={onDateSelect} onBookingUpdate={onBookingUpdate} />}
+      </div>
+    </div>
+  );
+};
+
+// Month View Component
+const MonthView = ({ data, onDateSelect, selectedDate }) => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <div className="month-view">
       <div className="calendar-grid">
         {/* Day Headers */}
         {dayNames.map(day => (
-          <div key={day} className="day-header">
-            {day}
-          </div>
+          <div key={day} className="day-header">{day}</div>
         ))}
-
+        
         {/* Calendar Days */}
-        {days.map((day, index) => {
-          const dayBookings = day ? getBookingsForDate(day) : [];
-          const isToday = day && day.toDateString() === new Date().toDateString();
-          const isSelected = day && selectedDate && day.toDateString() === selectedDate.toDateString();
+        {data.days.map((dayData, index) => {
+          if (!dayData) {
+            return <div key={index} className="calendar-day empty" />;
+          }
 
+          const isToday = dayData.date.toDateString() === new Date().toDateString();
+          const isSelected = selectedDate && dayData.date.toDateString() === selectedDate.toDateString();
+          
           return (
             <div
               key={index}
-              className={`calendar-day ${!day ? 'empty' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
-              onClick={() => day && onDateSelect(day)}
+              className={`calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+              onClick={() => onDateSelect(dayData.date)}
             >
-              {day && (
-                <>
-                  <div className="day-number">{day.getDate()}</div>
-                  <div className="bookings-indicator">
-                    {dayBookings.slice(0, 3).map((booking, idx) => (
-                      <div
-                        key={idx}
-                        className={`booking-dot ${booking.status}`}
-                        title={`${booking.service?.name} - ${booking.customer?.name} at ${booking.startTime}`}
-                      />
-                    ))}
-                    {dayBookings.length > 3 && (
-                      <div className="more-bookings">+{dayBookings.length - 3}</div>
-                    )}
-                  </div>
-                </>
-              )}
+              <div className="day-number">{dayData.date.getDate()}</div>
+              <div className="bookings-indicator">
+                {dayData.bookings.slice(0, 3).map((booking, idx) => (
+                  <div
+                    key={idx}
+                    className={`booking-dot ${booking.status}`}
+                    title={`${booking.service?.name} - ${booking.customer?.name} at ${booking.startTime}`}
+                  />
+                ))}
+                {dayData.bookings.length > 3 && (
+                  <div className="more-bookings">+{dayData.bookings.length - 3}</div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -1292,6 +1448,126 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate }) => {
     </div>
   );
 };
+
+// Week View Component
+const WeekView = ({ data, onDateSelect, selectedDate }) => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <div className="week-view">
+      <div className="week-header">
+        {data.days.map((dayData, index) => (
+          <div key={index} className="week-day-header">
+            <div className="day-name">{dayNames[index]}</div>
+            <div className={`day-number ${dayData.date.toDateString() === new Date().toDateString() ? 'today' : ''}`}>
+              {dayData.date.getDate()}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="week-content">
+        {data.days.map((dayData, index) => {
+          const isSelected = selectedDate && dayData.date.toDateString() === selectedDate.toDateString();
+          
+          return (
+            <div 
+              key={index} 
+              className={`week-day ${isSelected ? 'selected' : ''}`}
+              onClick={() => onDateSelect(dayData.date)}
+            >
+              <div className="day-bookings">
+                {dayData.bookings.map(booking => (
+                  <div key={booking._id} className={`booking-block ${booking.status}`}>
+                    <div className="booking-time">{booking.startTime}</div>
+                    <div className="booking-service">{booking.service?.name}</div>
+                    <div className="booking-customer">{booking.customer?.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Day View Component
+const DayView = ({ data, onDateSelect, onBookingUpdate }) => {
+  const timeSlots = generateTimeSlots();
+
+  function generateTimeSlots() {
+    const slots = [];
+    for (let hour = 8; hour < 20; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      slots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+    return slots;
+  }
+
+  const getBookingForTimeSlot = (timeSlot) => {
+    return data.bookings.find(booking => booking.startTime === timeSlot);
+  };
+
+  return (
+    <div className="day-view">
+      <div className="day-header">
+        <h3>{data.date.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}</h3>
+        <div className="day-stats">
+          <span className="booking-count">{data.bookings.length} appointments</span>
+        </div>
+      </div>
+      
+      <div className="time-slots-container">
+        {timeSlots.map(timeSlot => {
+          const booking = getBookingForTimeSlot(timeSlot);
+          
+          return (
+            <div key={timeSlot} className="time-slot-row">
+              <div className="time-label">{timeSlot}</div>
+              <div className="appointment-slot">
+                {booking ? (
+                  <div className={`appointment-card ${booking.status}`}>
+                    <div className="appointment-header">
+                      <span className="service-name">{booking.service?.name}</span>
+                      <span className={`status-badge ${booking.status}`}>
+                        {booking.status}
+                      </span>
+                    </div>
+                    <div className="appointment-details">
+                      <div className="customer-info">
+                        <span className="customer-name">{booking.customer?.name}</span>
+                        <span className="customer-phone">{booking.customer?.phone}</span>
+                      </div>
+                      <div className="staff-info">
+                        <span className="staff-name">with {booking.staff?.name}</span>
+                      </div>
+                      <div className="appointment-meta">
+                        <span className="duration">{booking.duration || 60} min</span>
+                        <span className="price">${booking.price}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-slot">
+                    <span className="available-text">Available</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 
 // Booking Details Panel Component
 const BookingDetailsPanel = ({ selectedDate, bookings }) => {
