@@ -1253,12 +1253,12 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }
   const getWeekData = (date) => {
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - date.getDay());
-    
+
     const week = [];
     for (let i = 0; i < 7; i++) {
       const day = new Date(startOfWeek);
       day.setDate(startOfWeek.getDate() + i);
-      
+
       const dayBookings = filteredBookings.filter(booking => {
         const bookingDate = new Date(booking.date);
         return bookingDate.toDateString() === day.toDateString();
@@ -1284,14 +1284,14 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-    
+
     const days = [];
-    
+
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
-    
+
     // Add all days of the month
     for (let i = 1; i <= daysInMonth; i++) {
       const day = new Date(year, month, i);
@@ -1299,7 +1299,7 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }
         const bookingDate = new Date(booking.date);
         return bookingDate.toDateString() === day.toDateString();
       });
-      
+
       days.push({
         date: day,
         bookings: dayBookings
@@ -1317,19 +1317,19 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }
   const calendarData = getCalendarData();
 
   const getViewTitle = () => {
-    const options = { 
-      year: 'numeric', 
+    const options = {
+      year: 'numeric',
       month: 'long',
       ...(view === 'day' && { day: 'numeric' })
     };
-    
+
     if (view === 'week') {
       const weekData = calendarData;
       const start = weekData.days[0].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const end = weekData.days[6].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       return `${start} - ${end}, ${weekData.days[0].date.getFullYear()}`;
     }
-    
+
     return currentDate.toLocaleDateString('en-US', options);
   };
 
@@ -1349,23 +1349,23 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }
             &#8250;
           </button>
         </div>
-        
+
         <div className="calendar-controls">
           {/* View Controls */}
           <div className="view-controls">
-            <button 
+            <button
               onClick={() => setView('day')}
               className={`view-btn ${view === 'day' ? 'active' : ''}`}
             >
               Day
             </button>
-            <button 
+            <button
               onClick={() => setView('week')}
               className={`view-btn ${view === 'week' ? 'active' : ''}`}
             >
               Week
             </button>
-            <button 
+            <button
               onClick={() => setView('month')}
               className={`view-btn ${view === 'month' ? 'active' : ''}`}
             >
@@ -1375,8 +1375,8 @@ const AdminCalendar = ({ bookings, onDateSelect, selectedDate, onBookingUpdate }
 
           {/* Staff Filter */}
           <div className="staff-filter">
-            <select 
-              value={selectedStaff} 
+            <select
+              value={selectedStaff}
               onChange={(e) => setSelectedStaff(e.target.value)}
               className="staff-select"
             >
@@ -1412,7 +1412,7 @@ const MonthView = ({ data, onDateSelect, selectedDate }) => {
         {dayNames.map(day => (
           <div key={day} className="day-header">{day}</div>
         ))}
-        
+
         {/* Calendar Days */}
         {data.days.map((dayData, index) => {
           if (!dayData) {
@@ -1421,7 +1421,7 @@ const MonthView = ({ data, onDateSelect, selectedDate }) => {
 
           const isToday = dayData.date.toDateString() === new Date().toDateString();
           const isSelected = selectedDate && dayData.date.toDateString() === selectedDate.toDateString();
-          
+
           return (
             <div
               key={index}
@@ -1465,14 +1465,14 @@ const WeekView = ({ data, onDateSelect, selectedDate }) => {
           </div>
         ))}
       </div>
-      
+
       <div className="week-content">
         {data.days.map((dayData, index) => {
           const isSelected = selectedDate && dayData.date.toDateString() === selectedDate.toDateString();
-          
+
           return (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`week-day ${isSelected ? 'selected' : ''}`}
               onClick={() => onDateSelect(dayData.date)}
             >
@@ -1513,21 +1513,21 @@ const DayView = ({ data, onDateSelect, onBookingUpdate }) => {
   return (
     <div className="day-view">
       <div className="day-header">
-        <h3>{data.date.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
+        <h3>{data.date.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
         })}</h3>
         <div className="day-stats">
           <span className="booking-count">{data.bookings.length} appointments</span>
         </div>
       </div>
-      
+
       <div className="time-slots-container">
         {timeSlots.map(timeSlot => {
           const booking = getBookingForTimeSlot(timeSlot);
-          
+
           return (
             <div key={timeSlot} className="time-slot-row">
               <div className="time-label">{timeSlot}</div>
@@ -1859,6 +1859,11 @@ const StaffModal = ({ isOpen, onClose, onSave, services }) => {
         formDataToSend.append('profileImage', profileImageFile);
       }
 
+      console.log('Sending FormData with entries:');
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, value);
+      }
+
       await api.post('/staff/profile', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -1870,7 +1875,17 @@ const StaffModal = ({ isOpen, onClose, onSave, services }) => {
       handleClose();
     } catch (error) {
       console.error('Error creating staff:', error);
-      showToast('Failed to create staff member', 'error');
+
+      let errorMessage = 'Failed to create staff member';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data) {
+        errorMessage = error.response.data;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showToast(errorMessage, 'error');
     } finally {
       setUploading(false);
     }
@@ -2055,5 +2070,104 @@ const StaffModal = ({ isOpen, onClose, onSave, services }) => {
         </div>
       </form>
     </Modal>
+  );
+};
+
+
+// Enhanced Staff Display with Profile Images
+const StaffDisplay = ({ staff }) => {
+  const getImageUrl = (profileImage) => {
+    if (!profileImage) return null;
+
+    // If it's already a full URL, use it directly
+    if (profileImage.startsWith('http')) {
+      return profileImage;
+    }
+
+    // Construct the full URL using your backend domain
+    const backendUrl = process.env.NODE_ENV === 'production'
+      ? 'https://salon-booking-app-yv82.onrender.com'
+      : 'http://localhost:5000';
+
+    return `${backendUrl}${profileImage}`;
+  };
+
+  return (
+    <div className="staff-management-grid">
+      {staff.map(member => (
+        <div key={member._id} className="staff-card slide-in-left">
+          <div className="staff-avatar">
+            {member.profileImage ? (
+              <>
+                <img
+                  src={getImageUrl(member.profileImage)}
+                  alt={member.name}
+                  className="staff-profile-image"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    console.error(`Failed to load image: ${getImageUrl(member.profileImage)}`);
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                  onLoad={() => {
+                    // Hide fallback when image loads successfully
+                    const fallback = document.querySelector(`#fallback-${member._id}`);
+                    if (fallback) fallback.style.display = 'none';
+                  }}
+                />
+                <div
+                  id={`fallback-${member._id}`}
+                  className="avatar-fallback"
+                  style={{ display: 'flex' }}
+                >
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+              </>
+            ) : (
+              <div className="avatar-fallback">
+                {member.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <h3>{member.name}</h3>
+          {member.email && (
+            <p className="text-light">{member.email}</p>
+          )}
+          {member.phone && (
+            <p className="text-light">{member.phone}</p>
+          )}
+
+          <div className="staff-services-list">
+            <h4>Assigned Services:</h4>
+            {member.services?.length > 0 ? (
+              <div>
+                {member.services.map((service, index) => (
+                  <span key={index} className="staff-service-tag">
+                    {service.name || 'Service'}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-light text-sm">No services assigned</p>
+            )}
+          </div>
+
+          {member.workingHours && (
+            <div className="staff-working-hours">
+              <h4>Working Hours:</h4>
+              <p>
+                {member.workingHours.startTime || '9:00'} - {member.workingHours.endTime || '18:00'}
+              </p>
+              {member.workingHours.workingDays && (
+                <p className="mt-1">
+                  {member.workingHours.workingDays.join(', ')}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 };
